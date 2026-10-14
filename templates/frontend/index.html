@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f6f2">
+  <title>Місця — тестування API</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17251f;
+      --muted: #66736b;
+      --line: #dce4dd;
+      --paper: #fff;
+      --canvas: #f4f6f2;
+      --green: #236b4b;
+      --green-dark: #174a34;
+      --lime: #d9f27b;
+      --red: #a23b35;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--canvas); color: var(--ink); }
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+    .shell { max-width: 1180px; margin: 0 auto; padding: 26px 28px 48px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 48px; }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: -.04em; }
+    .brand-mark { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 14px; background: var(--green); color: white; font-size: 20px; }
+    .brand small { display: block; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+    .api-state { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 13px; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: #a5afa8; }
+    .dot.ok { background: #38a169; box-shadow: 0 0 0 4px #38a16920; }
+    .dot.bad { background: var(--red); }
+    .hero { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 24px; margin-bottom: 30px; }
+    .eyebrow { color: var(--green); font-size: 12px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    h1 { margin: 10px 0 12px; max-width: 700px; font-size: clamp(34px, 5vw, 58px); letter-spacing: -.055em; line-height: 1.02; }
+    .hero p { max-width: 580px; margin: 0; color: var(--muted); line-height: 1.65; }
+    .api-pill { padding: 11px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--muted); font: 12px ui-monospace, SFMono-Regular, Consolas, monospace; white-space: nowrap; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(290px, .85fr); gap: 18px; align-items: start; }
+    .column { display: grid; gap: 18px; }
+    .card { border: 1px solid var(--line); border-radius: 18px; background: var(--paper); box-shadow: 0 8px 28px #1e352608; overflow: hidden; }
+    .card-head { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 20px 22px 16px; }
+    .card-head h2 { margin: 0; font-size: 17px; letter-spacing: -.025em; }
+    .card-head p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+    .card-body { padding: 0 22px 22px; }
+    .badge { display: inline-flex; align-items: center; padding: 5px 9px; border-radius: 20px; background: #edf3ed; color: var(--green); font-size: 11px; font-weight: 750; }
+    .controls { display: flex; gap: 8px; }
+    .btn { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; background: white; color: var(--ink); font-weight: 700; font-size: 13px; transition: .15s ease; }
+    .btn:hover { border-color: #aab9ae; transform: translateY(-1px); }
+    .btn-primary { border-color: var(--green); background: var(--green); color: white; }
+    .btn-primary:hover { border-color: var(--green-dark); background: var(--green-dark); }
+    .btn-danger { color: var(--red); }
+    .btn-small { min-height: 32px; padding: 0 10px; font-size: 12px; }
+    .field { display: grid; gap: 7px; margin-bottom: 14px; }
+    .field label { color: #48564e; font-size: 12px; font-weight: 750; }
+    .field input, .field textarea, .field select, .search {
+      width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; outline: none; background: #fff; color: var(--ink);
+    }
+    .field textarea { min-height: 88px; resize: vertical; }
+    .field input:focus, .field textarea:focus, .field select:focus, .search:focus { border-color: #5c9877; box-shadow: 0 0 0 3px #236b4b18; }
+    .two-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .muted { color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .notice { display: none; margin: 0 22px 18px; padding: 11px 13px; border: 1px solid #f0d2ce; border-radius: 10px; background: #fff7f6; color: var(--red); font-size: 12px; white-space: pre-wrap; }
+    .notice.show { display: block; }
+    .notice.success { border-color: #cce3d2; background: #f3faf4; color: var(--green-dark); }
+    .account-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border-radius: 12px; background: #f5f8f4; }
+    .account-name { font-weight: 800; }
+    .account-email { margin-top: 3px; color: var(--muted); font-size: 12px; }
+    .segmented { display: flex; gap: 4px; padding: 4px; border-radius: 10px; background: #f1f4f0; }
+    .segmented button { flex: 1; min-height: 32px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 700; }
+    .segmented button.active { background: white; color: var(--green-dark); box-shadow: 0 1px 4px #12251918; }
+    .list { display: grid; gap: 10px; }
+    .place { padding: 15px; border: 1px solid var(--line); border-radius: 13px; }
+    .place-top { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+    .place h3 { margin: 0; font-size: 15px; }
+    .place p { margin: 8px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; white-space: pre-line; }
+    .place-meta { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+    .meta-chip { padding: 5px 8px; border-radius: 7px; background: #f1f4f0; color: #536158; font-size: 11px; }
+    .search-row { display: flex; gap: 9px; margin: 0 22px 15px; }
+    .empty { padding: 22px; border: 1px dashed var(--line); border-radius: 12px; color: var(--muted); text-align: center; font-size: 13px; }
+    .category-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .category { padding: 9px 11px; border: 1px solid var(--line); border-radius: 10px; background: #fbfcfa; font-size: 12px; }
+    .category strong { color: var(--green-dark); }
+    .response { max-height: 240px; overflow: auto; margin: 0; padding: 14px; border-radius: 11px; background: #17251f; color: #d9e8dd; font: 11px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .footer { margin-top: 22px; color: var(--muted); text-align: center; font-size: 11px; }
+    @media (max-width: 800px) {
+      .shell { padding: 20px 16px 36px; }
+      .topbar { margin-bottom: 34px; }
+      .layout { grid-template-columns: 1fr; }
+      .hero { grid-template-columns: 1fr; }
+      .api-pill { justify-self: start; }
+    }
+    @media (max-width: 480px) {
+      .topbar { align-items: start; flex-direction: column; }
+      .two-fields { grid-template-columns: 1fr; gap: 0; }
+      .card-head { padding-left: 16px; padding-right: 16px; }
+      .card-body { padding-left: 16px; padding-right: 16px; }
+      .search-row { margin-left: 16px; margin-right: 16px; }
+      .notice { margin-left: 16px; margin-right: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand"><div class="brand-mark">⌖</div><div>МІСЦЯ<small>API playground</small></div></div>
+      <div class="api-state"><span id="apiDot" class="dot"></span><span id="apiStatus">Перевіряю API…</span></div>
+    </header>
+
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Локальний стенд</div>
+        <h1>Перевіряй API<br>у браузері.</h1>
+        <p>Переглядай категорії та місця, тестуй авторизацію і створення записів. Інтерфейс працює з API цього Django-проєкту.</p>
+      </div>
+      <div class="api-pill">API&nbsp; /api/ &nbsp;·&nbsp; same-origin</div>
+    </section>
+
+    <div class="layout">
+      <section class="column">
+        <article class="card">
+          <div class="card-head">
+            <div><h2>Місця</h2><p>Список з API · для запису потрібен вхід</p></div>
+            <div class="controls"><span id="placeCount" class="badge">0 записів</span><button id="refreshButton" class="btn btn-small" type="button">Оновити</button></div>
+          </div>
+          <div class="search-row"><input id="searchInput" class="search" type="search" placeholder="Пошук за назвою чи адресою" aria-label="Пошук місць"></div>
+          <div class="card-body"><div id="placesList" class="list"><div class="empty">Завантажую місця…</div></div></div>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <div><h2>Додати місце</h2><p>POST /api/places/</p></div>
+            <span class="badge">потрібна авторизація</span>
+          </div>
+          <div id="placeNotice" class="notice" role="status"></div>
+          <form id="placeForm" class="card-body">
+            <div class="field"><label for="placeTitle">Назва</label><input id="placeTitle" name="title" maxlength="200" required></div>
+            <div class="field"><label for="placeDescription">Опис</label><textarea id="placeDescription" name="description" required></textarea></div>
+            <div class="field"><label for="placeCategory">Категорія</label><select id="placeCategory" name="category" required><option value="">Спочатку завантажте категорії</option></select></div>
+            <div class="field"><label for="placeAddress">Адреса</label><input id="placeAddress" name="address" maxlength="255" required></div>
+            <div class="two-fields">
+              <div class="field"><label for="placeLatitude">Широта</label><input id="placeLatitude" name="latitude" type="number" min="-90" max="90" step="0.000001" placeholder="50.450100" required></div>
+              <div class="field"><label for="placeLongitude">Довгота</label><input id="placeLongitude" name="longitude" type="number" min="-180" max="180" step="0.000001" placeholder="30.523400" required></div>
+            </div>
+            <button id="createPlaceButton" class="btn btn-primary" type="submit">Створити місце</button>
+          </form>
+        </article>
+      </section>
+
+      <aside class="column">
+        <article class="card">
+          <div class="card-head"><div><h2>Обліковий запис</h2><p>Сесія Django · cookie + CSRF</p></div></div>
+          <div id="authNotice" class="notice" role="status"></div>
+          <div id="authContent" class="card-body">
+            <div class="segmented" role="tablist" aria-label="Дія з обліковим записом">
+              <button id="loginTab" class="active" type="button" role="tab" aria-selected="true">Увійти</button>
+              <button id="registerTab" type="button" role="tab" aria-selected="false">Реєстрація</button>
+            </div>
+            <form id="authForm" style="margin-top:16px">
+              <div class="field"><label for="authUsername">Ім’я користувача</label><input id="authUsername" name="username" autocomplete="username" required></div>
+              <div id="emailField" class="field" hidden><label for="authEmail">Email</label><input id="authEmail" name="email" type="email" autocomplete="email"></div>
+              <div class="field"><label for="authPassword">Пароль</label><input id="authPassword" name="password" type="password" autocomplete="current-password" required></div>
+              <button id="authSubmit" class="btn btn-primary" type="submit">Увійти</button>
+            </form>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-head"><div><h2>Категорії</h2><p>GET /api/categories/</p></div><span id="categoryCount" class="badge">0</span></div>
+          <div id="categoryNotice" class="notice" role="status"></div>
+          <div class="card-body">
+            <div id="categoriesList" class="category-list"><div class="empty" style="width:100%">Завантажую…</div></div>
+            <form id="categoryForm" style="margin-top:16px">
+              <div class="field"><label for="categoryName">Додати категорію (лише адміністратор)</label><input id="categoryName" name="name" maxlength="100" required></div>
+              <button class="btn btn-small" type="submit">Додати категорію</button>
+            </form>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-head"><div><h2>Остання відповідь</h2><p id="responseLabel">Очікуємо запит</p></div></div>
+          <div class="card-body"><pre id="responseBody" class="response">Тут з’явиться відповідь API.</pre></div>
+        </article>
+      </aside>
+    </div>
+    <footer class="footer">Django REST Framework · працює локально з поточним бекендом</footer>
+  </main>
+
+  <script>
+    const API = {
+      categories: '/api/categories/',
+      places: '/api/places/',
+      csrf: '/api/auth/csrf/',
+      login: '/api/auth/login/',
+      register: '/api/auth/register/',
+      logout: '/api/auth/logout/',
+      me: '/api/auth/me/',
+    };
+    let categories = [];
+    let places = [];
+    let authMode = 'login';
+    let currentUser = null;
+
+    const byId = (id) => document.getElementById(id);
+    const getCookie = (name) => document.cookie.split('; ').find((part) => part.startsWith(`${name}=`))?.split('=').slice(1).join('=');
+    const showNotice = (id, message, success = false) => {
+      const node = byId(id);
+      node.textContent = message;
+      node.classList.toggle('success', success);
+      node.classList.add('show');
+    };
+    const hideNotice = (id) => byId(id).classList.remove('show');
+    const showResponse = (label, data) => {
+      byId('responseLabel').textContent = label;
+      byId('responseBody').textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    };
+    const errorMessage = (data, status) => {
+      if (data && typeof data === 'object') return `${status}: ${JSON.stringify(data)}`;
+      return `${status}: ${data || 'Помилка запиту'}`;
+    };
+
+    async function request(url, options = {}) {
+      const method = (options.method || 'GET').toUpperCase();
+      const headers = new Headers(options.headers || {});
+      if (options.body !== undefined) headers.set('Content-Type', 'application/json');
+      if (!['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method)) {
+        if (!getCookie('csrftoken')) await fetch(API.csrf, { credentials: 'same-origin' });
+        const csrfToken = getCookie('csrftoken');
+        if (csrfToken) headers.set('X-CSRFToken', decodeURIComponent(csrfToken));
+      }
+      const response = await fetch(url, {
+        ...options,
+        method,
+        headers,
+        credentials: 'same-origin',
+      });
+      const text = await response.text();
+      let data = null;
+      if (text) {
+        try { data = JSON.parse(text); } catch { data = text; }
+      }
+      showResponse(`${method} ${url} · ${response.status}`, data ?? `HTTP ${response.status}`);
+      if (!response.ok) throw new Error(errorMessage(data, response.status));
+      return data;
+    }
+
+    function records(data) {
+      if (Array.isArray(data)) return data;
+      if (data && Array.isArray(data.results)) return data.results;
+      return [];
+    }
+
+    function renderCategories() {
+      byId('categoryCount').textContent = String(categories.length);
+      const list = byId('categoriesList');
+      list.replaceChildren();
+      const select = byId('placeCategory');
+      select.replaceChildren(new Option(categories.length ? 'Оберіть категорію' : 'Категорій поки немає', ''));
+      for (const category of categories) {
+        const item = document.createElement('div');
+        item.className = 'category';
+        const name = document.createElement('strong');
+        name.textContent = category.name;
+        item.append(name);
+        if (category.slug) {
+          const slug = document.createElement('span');
+          slug.className = 'muted';
+          slug.textContent = ` · ${category.slug}`;
+          item.append(slug);
+        }
+        list.append(item);
+        select.add(new Option(category.name, String(category.id)));
+      }
+      if (!categories.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.style.width = '100%';
+        empty.textContent = 'Категорії не знайдено.';
+        list.append(empty);
+      }
+    }
+
+    function renderPlaces() {
+      const query = byId('searchInput').value.trim().toLocaleLowerCase();
+      const visible = places.filter((place) => `${place.title || ''} ${place.address || ''} ${place.description || ''}`.toLocaleLowerCase().includes(query));
+      byId('placeCount').textContent = `${places.length} ${places.length === 1 ? 'місце' : 'місць'}`;
+      const list = byId('placesList');
+      list.replaceChildren();
+      if (!visible.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = query ? 'За цим запитом нічого не знайдено.' : 'Місць поки немає. Додай перше після входу.';
+        list.append(empty);
+        return;
+      }
+      for (const place of visible) {
+        const card = document.createElement('article');
+        card.className = 'place';
+        const top = document.createElement('div');
+        top.className = 'place-top';
+        const title = document.createElement('h3');
+        title.textContent = place.title || 'Без назви';
+        top.append(title);
+        if (currentUser) {
+          const remove = document.createElement('button');
+          remove.className = 'btn btn-danger btn-small';
+          remove.type = 'button';
+          remove.textContent = 'Видалити';
+          remove.addEventListener('click', () => deletePlace(place.id));
+          top.append(remove);
+        }
+        card.append(top);
+        const description = document.createElement('p');
+        description.textContent = place.description || '';
+        card.append(description);
+        const meta = document.createElement('div');
+        meta.className = 'place-meta';
+        for (const value of [place.address, place.category_detail?.name, place.author, `${place.latitude}, ${place.longitude}`]) {
+          if (!value) continue;
+          const chip = document.createElement('span');
+          chip.className = 'meta-chip';
+          chip.textContent = value;
+          meta.append(chip);
+        }
+        card.append(meta);
+        list.append(card);
+      }
+    }
+
+    function setUser(user) {
+      currentUser = user;
+      const content = byId('authContent');
+      content.replaceChildren();
+      if (user) {
+        const row = document.createElement('div');
+        row.className = 'account-row';
+        const details = document.createElement('div');
+        const name = document.createElement('div');
+        name.className = 'account-name';
+        name.textContent = user.username;
+        details.append(name);
+        if (user.email) {
+          const email = document.createElement('div');
+          email.className = 'account-email';
+          email.textContent = user.email;
+          details.append(email);
+        }
+        const logout = document.createElement('button');
+        logout.className = 'btn btn-small';
+        logout.type = 'button';
+        logout.textContent = 'Вийти';
+        logout.addEventListener('click', logoutUser);
+        row.append(details, logout);
+        content.append(row);
+      } else {
+        content.innerHTML = `
+          <div class="segmented" role="tablist" aria-label="Дія з обліковим записом">
+            <button id="loginTab" class="${authMode === 'login' ? 'active' : ''}" type="button" role="tab" aria-selected="${authMode === 'login'}">Увійти</button>
+            <button id="registerTab" class="${authMode === 'register' ? 'active' : ''}" type="button" role="tab" aria-selected="${authMode === 'register'}">Реєстрація</button>
+          </div>
+          <form id="authForm" style="margin-top:16px">
+            <div class="field"><label for="authUsername">Ім’я користувача</label><input id="authUsername" name="username" autocomplete="username" required></div>
+            <div id="emailField" class="field" ${authMode === 'register' ? '' : 'hidden'}><label for="authEmail">Email</label><input id="authEmail" name="email" type="email" autocomplete="email" ${authMode === 'register' ? 'required' : ''}></div>
+            <div class="field"><label for="authPassword">Пароль</label><input id="authPassword" name="password" type="password" autocomplete="${authMode === 'register' ? 'new-password' : 'current-password'}" required></div>
+            <button id="authSubmit" class="btn btn-primary" type="submit">${authMode === 'register' ? 'Створити акаунт' : 'Увійти'}</button>
+          </form>`;
+        byId('loginTab').addEventListener('click', () => setAuthMode('login'));
+        byId('registerTab').addEventListener('click', () => setAuthMode('register'));
+        byId('authForm').addEventListener('submit', submitAuth);
+      }
+      renderPlaces();
+    }
+
+    function setAuthMode(mode) {
+      authMode = mode;
+      hideNotice('authNotice');
+      setUser(null);
+    }
+
+    async function loadData() {
+      byId('apiStatus').textContent = 'Підключаюсь…';
+      byId('apiDot').className = 'dot';
+      const outcomes = await Promise.allSettled([
+        request(API.categories),
+        request(API.places),
+      ]);
+      const failures = [];
+      if (outcomes[0].status === 'fulfilled') {
+        categories = records(outcomes[0].value);
+        renderCategories();
+      } else failures.push(`Категорії: ${outcomes[0].reason.message}`);
+      if (outcomes[1].status === 'fulfilled') {
+        places = records(outcomes[1].value);
+        renderPlaces();
+      } else failures.push(`Місця: ${outcomes[1].reason.message}`);
+      if (!failures.length) {
+        byId('apiStatus').textContent = 'API доступне';
+        byId('apiDot').className = 'dot ok';
+      } else {
+        byId('apiStatus').textContent = 'Є помилки API';
+        byId('apiDot').className = 'dot bad';
+        showResponse('Помилка завантаження', failures.join('\n'));
+      }
+      try {
+        const user = await request(API.me);
+        setUser(user);
+      } catch (error) {
+        if (!error.message.startsWith('403:') && !error.message.startsWith('401:')) {
+          showNotice('authNotice', error.message);
+        }
+        setUser(null);
+      }
+    }
+
+    async function submitAuth(event) {
+      event.preventDefault();
+      hideNotice('authNotice');
+      const form = new FormData(event.currentTarget);
+      const payload = {
+        username: form.get('username'),
+        password: form.get('password'),
+      };
+      if (authMode === 'register') payload.email = form.get('email');
+      try {
+        const user = await request(authMode === 'register' ? API.register : API.login, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        setUser(user);
+        showNotice('authNotice', `Ви увійшли як ${user.username}.`, true);
+      } catch (error) {
+        showNotice('authNotice', error.message);
+      }
+    }
+
+    async function logoutUser() {
+      hideNotice('authNotice');
+      try {
+        await request(API.logout, { method: 'POST' });
+        setUser(null);
+        showNotice('authNotice', 'Ви вийшли з облікового запису.', true);
+      } catch (error) {
+        showNotice('authNotice', error.message);
+      }
+    }
+
+    async function createPlace(event) {
+      event.preventDefault();
+      hideNotice('placeNotice');
+      const formElement = event.currentTarget;
+      const formData = new FormData(formElement);
+      const payload = Object.fromEntries(formData.entries());
+      payload.category = Number(payload.category);
+      payload.latitude = Number(payload.latitude);
+      payload.longitude = Number(payload.longitude);
+      byId('createPlaceButton').disabled = true;
+      try {
+        await request(API.places, { method: 'POST', body: JSON.stringify(payload) });
+        formElement.reset();
+        showNotice('placeNotice', 'Місце створено.', true);
+        await loadData();
+      } catch (error) {
+        showNotice('placeNotice', error.message);
+      } finally {
+        byId('createPlaceButton').disabled = false;
+      }
+    }
+
+    async function createCategory(event) {
+      event.preventDefault();
+      hideNotice('categoryNotice');
+      const formElement = event.currentTarget;
+      const name = new FormData(formElement).get('name');
+      try {
+        await request(API.categories, {
+          method: 'POST',
+          body: JSON.stringify({ name }),
+        });
+        formElement.reset();
+        showNotice('categoryNotice', 'Категорію створено.', true);
+        await loadData();
+      } catch (error) {
+        showNotice('categoryNotice', error.message);
+      }
+    }
+
+    async function deletePlace(id) {
+      if (!window.confirm('Видалити це місце?')) return;
+      try {
+        await request(`${API.places}${id}/`, { method: 'DELETE' });
+        showNotice('placeNotice', 'Місце видалено.', true);
+        await loadData();
+      } catch (error) {
+        showNotice('placeNotice', error.message);
+      }
+    }
+
+    byId('loginTab').addEventListener('click', () => setAuthMode('login'));
+    byId('registerTab').addEventListener('click', () => setAuthMode('register'));
+    byId('authForm').addEventListener('submit', submitAuth);
+    byId('placeForm').addEventListener('submit', createPlace);
+    byId('categoryForm').addEventListener('submit', createCategory);
+    byId('refreshButton').addEventListener('click', loadData);
+    byId('searchInput').addEventListener('input', renderPlaces);
+    loadData();
+  </script>
+</body>
+</html>
